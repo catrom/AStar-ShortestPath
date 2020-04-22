@@ -125,7 +125,7 @@
             // 
             // btnPickSource
             // 
-            this.btnPickSource.BackColor = System.Drawing.Color.Lime;
+            this.btnPickSource.BackColor = System.Drawing.Color.Green;
             this.btnPickSource.FlatAppearance.BorderColor = System.Drawing.Color.Black;
             this.btnPickSource.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPickSource.Location = new System.Drawing.Point(130, 23);
@@ -137,7 +137,7 @@
             // 
             // btnPickDest
             // 
-            this.btnPickDest.BackColor = System.Drawing.Color.OrangeRed;
+            this.btnPickDest.BackColor = System.Drawing.Color.Red;
             this.btnPickDest.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPickDest.Location = new System.Drawing.Point(130, 59);
             this.btnPickDest.Name = "btnPickDest";
@@ -157,14 +157,14 @@
             // 
             // btnPickBlocked
             // 
-            this.btnPickBlocked.BackColor = System.Drawing.SystemColors.AppWorkspace;
+            this.btnPickBlocked.BackColor = System.Drawing.Color.Gray;
             this.btnPickBlocked.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPickBlocked.Location = new System.Drawing.Point(130, 94);
             this.btnPickBlocked.Name = "btnPickBlocked";
             this.btnPickBlocked.Size = new System.Drawing.Size(45, 23);
             this.btnPickBlocked.TabIndex = 2;
             this.btnPickBlocked.UseVisualStyleBackColor = false;
-            this.btnPickBlocked.Click += new System.EventHandler(this.btnPickBlocked_Click);
+            this.btnPickBlocked.Click += new System.EventHandler(this.BtnPickBlocked_Click);
             // 
             // groupBox1
             // 
@@ -313,7 +313,7 @@
             // 
             // btnCalc
             // 
-            this.btnCalc.BackColor = System.Drawing.Color.CornflowerBlue;
+            this.btnCalc.BackColor = System.Drawing.Color.MediumPurple;
             this.btnCalc.Location = new System.Drawing.Point(247, 17);
             this.btnCalc.Name = "btnCalc";
             this.btnCalc.Size = new System.Drawing.Size(102, 33);

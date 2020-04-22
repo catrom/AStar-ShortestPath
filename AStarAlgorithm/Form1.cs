@@ -12,227 +12,54 @@ namespace AStarAlgorithm
 {
     public partial class Form1 : Form
     {
+        // object-algorithm
         AStar aStar;
 
-        /// <summary>
-        /// -1: is not selected
-        /// 0: pick source cell
-        /// 1: pick destination cell
-        /// 2: pick blocked cells
-        /// </summary>
-        int selectedOptionCellPicker = -1;
-        bool enableToPick = false;
+        // cell color
+        public Color colorCellNone = Color.White;
+        public Color colorCellSource = Color.Green;
+        public Color colorCellDestination = Color.Red;
+        public Color colorCellBlock = Color.Gray;
+
+        // path color
+        public Color colorPathBlue = Color.Blue;
+        public Color colorPathNone = Color.FromArgb(0, 0, 0, 0);
+
+        public enum cellType:int {NONE, SOURCE, DESTINATION, BLOCK};
+        int selectedOptionCellPicker;
+
+        // deternmine user can pick cell on board or not
+        bool enableToPickCellOnBoard;
 
         // pen to draw path
-        PaintEventArgs peargs;
         Pen pen;
 
         // Source is the left-most bottom-most corner 
-        KeyValuePair<int, int> src = new KeyValuePair<int, int>(-1, -1);
+        KeyValuePair<int, int> src;
 
         // Destination is the left-most top-most corner 
-        KeyValuePair<int, int> dest = new KeyValuePair<int, int>(-1, -1);
+        KeyValuePair<int, int> dest;
+
         public Form1()
         {
             InitializeComponent();
+            Init();
+        }
+
+        #region Utilites
+
+        private void Init()
+        {
             aStar = new AStar();
-            btnPick.Enabled = enableToPick;
             pen = new Pen(Color.Blue, 2);
-        }
 
-        private void btnResetSize_Click(object sender, EventArgs e)
-        {
-            nudRow.Value = 0;
-            nudCol.Value = 0;
+            // if user have not pick any cell option yet, this will be set to false
+            btnPick.Enabled = false;
 
-            // reset display area
-            displayArea.Controls.Clear();
-            aStar.Result.Clear();
-            resetDestinationLocation();
-            resetSourceLocation();
-        }
+            selectedOptionCellPicker = (int)cellType.NONE;
+            enableToPickCellOnBoard = false;
 
-        private void btnApplySize_Click(object sender, EventArgs e)
-        {
-            // reset display area
-            displayArea.Controls.Clear();
-            aStar.Result.Clear();
-
-            aStar.Rows = (int)nudRow.Value;
-            aStar.Cols = (int)nudCol.Value;
-
-            int startX = 40, startY = 40;
-
-            // init index
-            for (int i = 0; i < aStar.Rows; i++)
-            {
-                Label lb = new Label();
-                lb.AutoSize = true;
-                lb.Text = i.ToString();
-                lb.Location = new System.Drawing.Point(20, 60 + i * 40);
-
-                // add to display
-                displayArea.Controls.Add(lb);
-            }
-
-            for (int j = 0; j < aStar.Cols; j++)
-            {
-                Label lb = new Label();
-                lb.AutoSize = true;
-                lb.Text = j.ToString();
-                lb.Location = new System.Drawing.Point(60 + j * 40, 20);
-
-                // add to display
-                lb.BringToFront();
-                displayArea.Controls.Add(lb);
-            }
-
-            // init board here
-            for (int i = 0; i < aStar.Rows; i++)
-            {
-                for (int j = 0; j < aStar.Cols; j++)
-                {
-                    Button btn = new Button();
-                    btn.BackColor = System.Drawing.Color.White;
-                    btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-                    btn.Location = new System.Drawing.Point(startY + j * 40, startX + i * 40); // a little confuse here, location = (col, row) 
-                    btn.Name = i.ToString() + "," + j.ToString(); // name using to store index (row, col) of a cell
-                    btn.Size = new System.Drawing.Size(40, 40);
-                    btn.UseVisualStyleBackColor = false;
-                    btn.Click += new System.EventHandler(this.btnCell_Click);
-                    btn.Paint += PathDraw_Paint;
-
-                    // add to display
-                    btn.BringToFront();
-                    displayArea.Controls.Add(btn);
-                    
-                }
-            }
-        }
-
-        private void btnPickSource_Click(object sender, EventArgs e)
-        {
-            selectedOptionCellPicker = 0;
-            btnPick.Text = "Start Pick";
-            btnPick.Enabled = true;
-            enableToPick = false;
-            selectPickSourceButton();
-            unselectPickDestinationButton();
-            unselectPickBlockedButton();
-        }
-
-        private void btnPickDest_Click(object sender, EventArgs e)
-        {
-            selectedOptionCellPicker = 1;
-            btnPick.Text = "Start Pick";
-            btnPick.Enabled = true;
-            enableToPick = false;
-            selectPickDestinationButton();
-            unselectPickBlockedButton();
-            unselectPickSourceButton();
-        }
-
-        private void btnPickBlocked_Click(object sender, EventArgs e)
-        {
-            selectedOptionCellPicker = 2;
-            btnPick.Text = "Start Pick";
-            btnPick.Enabled = true;
-            enableToPick = false;
-            selectPickBlockedButton();
-            unselectPickSourceButton();
-            unselectPickDestinationButton();
-        }
-
-        private void btnPickCell_Leave(object sender, EventArgs e)
-        {
-            enableToPick = false;
-        }
-
-        private void btnCell_Click(object sender, EventArgs e)
-        {
-            if (!enableToPick) return;
-
-            Button btn = sender as Button;
-            bool isSourcePicker = (selectedOptionCellPicker == 0);
-            bool isDestinationPicker = (selectedOptionCellPicker == 1);
-            bool isBlockedPicker = (selectedOptionCellPicker == 2);
-
-            // if that cell is picked before, unpick it
-            if (btn.BackColor != Color.White)
-            {
-                string[] index = btn.Name.Split(',');
-                int row = Int32.Parse(index[0]), col = Int32.Parse(index[1]);
-
-                // if it is a src/dest spot, notice to user and ignore the picker
-                if ((row == src.Key && col == src.Value) || (row == dest.Key && col == dest.Value))
-                {
-                    MessageBox.Show("Source or destination can not be blocked!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-               
-                btn.BackColor = Color.White;
-
-                // release the storage
-                if (isSourcePicker) resetSourceLocation();
-                else if (isDestinationPicker) resetDestinationLocation();
-            }
-            else
-            {
-                if (isSourcePicker)
-                {
-                    btn.BackColor = Color.Lime;
-
-                    // if it is another source, remove the color old
-                    if (src.Key != -1)
-                    {
-                        string old_name = src.Key.ToString() + "," + src.Value.ToString();
-                        displayArea.Controls[old_name].BackColor = Color.White;
-                    }
-
-
-                    // update src
-                    string[] index = btn.Name.Split(',');
-                    src = new KeyValuePair<int, int>(Int32.Parse(index[0]), Int32.Parse(index[1]));
-
-                }
-                else if (isDestinationPicker)
-                {
-                    btn.BackColor = Color.OrangeRed;
-
-                    // if it is another destination, remove the color old
-                    if (dest.Key != -1)
-                    {
-                        string old_name = dest.Key.ToString() + "," + dest.Value.ToString();
-                        displayArea.Controls[old_name].BackColor = Color.White;
-                    }
-
-                    // update src
-                    string[] index = btn.Name.Split(',');
-                    dest = new KeyValuePair<int, int>(Int32.Parse(index[0]), Int32.Parse(index[1]));
-                }
-                else if (isBlockedPicker)
-                {
-                    btn.BackColor = SystemColors.AppWorkspace;
-                }
-            }
-        }
-
-        private void btnResetCells_Click(object sender, EventArgs e)
-        {
-            // reset all color in display area
-            foreach (Control c in displayArea.Controls)
-            {
-                if (c.GetType() == typeof(Button))
-                {
-                    c.BackColor = Color.White;
-                }
-            }
-
-            // reset properties of A star
-            resetSourceLocation();
-            resetDestinationLocation();
-            aStar.Result.Clear();
-
+            ResetLocation();
         }
 
         private void resetSourceLocation()
@@ -245,71 +72,170 @@ namespace AStarAlgorithm
             dest = new KeyValuePair<int, int>(-1, -1);
         }
 
-        private void btnPick_Click(object sender, EventArgs e)
+        private void ResetLocation()
         {
-            if (btnPick.Text == "Start Pick")
+            resetDestinationLocation();
+            resetSourceLocation();
+        }
+
+        private void ResetDisplayArea()
+        {
+            displayArea.Controls.Clear();
+        }
+
+        private void ResetAStar()
+        {
+            aStar.Result.Clear();
+            ResetLocation();
+        }
+
+        private void ReDrawDisplayBoard()
+        {
+            // redraw
+            displayArea.Refresh();
+        }
+
+        private void ApplySizeToAStarGrid()
+        {
+            aStar.Rows = (int)nudRow.Value;
+            aStar.Cols = (int)nudCol.Value;
+        }
+
+        private void InitIndexOnDisplayArea()
+        {
+            int startX = 20, startY = 20;
+
+            // init index row
+            for (int i = 0; i < aStar.Rows; i++)
             {
-                enableToPick = true;
-                btnPick.Text = "Stop Pick";
+                Label lb = new Label();
+                lb.AutoSize = true;
+                lb.Text = i.ToString();
+                lb.Location = new System.Drawing.Point(startX, 60 + i * 40);
+
+                // add to display
+                displayArea.Controls.Add(lb);
             }
-            else
+
+            // init index col
+            for (int j = 0; j < aStar.Cols; j++)
             {
-                enableToPick = false;
-                btnPick.Enabled = false;
-                btnPick.Text = "Start Pick";
-                unselectPickBlockedButton();
-                unselectPickDestinationButton();
-                unselectPickSourceButton();
+                Label lb = new Label();
+                lb.AutoSize = true;
+                lb.Text = j.ToString();
+                lb.Location = new System.Drawing.Point(60 + j * 40, startY);
+
+                // add to display
+                lb.BringToFront();
+                displayArea.Controls.Add(lb);
             }
         }
 
-        private void selectPickSourceButton()
+        private void InitCellsOnDisplayArea()
+        {
+            int startX = 40, startY = 40;
+
+            // init board here
+            for (int i = 0; i < aStar.Rows; i++)
+            {
+                for (int j = 0; j < aStar.Cols; j++)
+                {
+                    Button btn = new Button();
+                    btn.BackColor = colorCellNone;
+                    btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+                    btn.Location = new System.Drawing.Point(startY + j * 40, startX + i * 40); // a little confuse here, location = (col, row) 
+                    btn.Name = InitIndexForButton(i, j); // name using to store index (row, col) of a cell
+                    btn.Size = new System.Drawing.Size(40, 40);
+                    btn.UseVisualStyleBackColor = false;
+                    btn.Click += new System.EventHandler(this.btnCell_Click);
+                    btn.Paint += PathDraw_Paint;
+
+                    // add to display
+                    btn.BringToFront();
+                    displayArea.Controls.Add(btn);
+
+                }
+            }
+        }
+
+        private void HandleAfterPickOption()
+        {
+            btnPick.Text = "Start Pick";
+
+            // enable the button so user can click it
+            btnPick.Enabled = true;
+
+            // just when user click the button, they can pick on board
+            enableToPickCellOnBoard = false;
+        }
+
+        private string InitIndexForButton(int row, int col)
+        {
+            return row.ToString() + "," + col.ToString();
+        }
+
+        private int[] GetButtonIndex(Button btn)
+        {
+            string[] index = btn.Name.Split(',');
+            int row = Int32.Parse(index[0]), col = Int32.Parse(index[1]);
+
+            return new int[] { row, col };
+        }
+
+        private bool IsSourcePick(int row, int col)
+        {
+            return row == src.Key && col == src.Value;
+        }
+
+        private bool IsDestinationPick(int row, int col)
+        {
+            return row == dest.Key && col == dest.Value;
+        }
+
+        private void renderSelectPickSourceButton()
         {
             btnPickSource.FlatAppearance.BorderColor = Color.Blue;
             btnPickSource.FlatAppearance.BorderSize = 2;
         }
 
-        private void unselectPickSourceButton()
+        private void renderUnselectPickSourceButton()
         {
             btnPickSource.FlatAppearance.BorderColor = Color.Black;
             btnPickSource.FlatAppearance.BorderSize = 1;
         }
 
-        private void selectPickDestinationButton()
+        private void renderSelectPickDestinationButton()
         {
             btnPickDest.FlatAppearance.BorderColor = Color.Blue;
             btnPickDest.FlatAppearance.BorderSize = 2;
         }
 
-        private void unselectPickDestinationButton()
+        private void renderUnselectPickDestinationButton()
         {
             btnPickDest.FlatAppearance.BorderColor = Color.Black;
             btnPickDest.FlatAppearance.BorderSize = 1;
         }
 
-        private void selectPickBlockedButton()
+        private void renderSelectPickBlockedButton()
         {
             btnPickBlocked.FlatAppearance.BorderColor = Color.Blue;
             btnPickBlocked.FlatAppearance.BorderSize = 2;
         }
 
-        private void unselectPickBlockedButton()
+        private void renderUnselectPickBlockedButton()
         {
             btnPickBlocked.FlatAppearance.BorderColor = Color.Black;
             btnPickBlocked.FlatAppearance.BorderSize = 1;
         }
 
-        private void btnCalc_Click(object sender, EventArgs e)
+        private void ShowInSolutionTextBox(Stack<KeyValuePair<int, int>> result)
         {
-            aStar.aStarSearch(getGrid(), src, dest);
-
-            Stack<KeyValuePair<int, int>> result = aStar.Result;
-
-            // show in solution
+            // clear the textbox
             tbSolution.Text = "";
-            if (aStar.Result.Count() > 0)
+
+            if (result.Count() > 0)
             {
-                tbSolution.Text = "Summary: " + aStar.Result.Count().ToString() + " steps";
+                tbSolution.Text = "Summary: " + result.Count().ToString() + " steps";
                 foreach (var i in result)
                 {
                     tbSolution.Text = "(" + i.Key.ToString() + ", " + i.Value.ToString() + ")" + '\n' + tbSolution.Text;
@@ -319,11 +245,182 @@ namespace AStarAlgorithm
             {
                 tbSolution.Text = "No Path!";
             }
-
-            // refresh display
-            displayArea.Refresh();
         }
 
+        #endregion
+
+        #region Event Handlers
+
+        private void btnResetSize_Click(object sender, EventArgs e)
+        {
+            nudRow.Value = 0;
+            nudCol.Value = 0;
+
+            ResetDisplayArea();
+            ResetAStar();
+        }
+
+        private void btnApplySize_Click(object sender, EventArgs e)
+        {
+            ResetDisplayArea();
+            // aStar.Result.Clear();
+
+            ApplySizeToAStarGrid();
+            InitIndexOnDisplayArea();
+            InitCellsOnDisplayArea();
+        }
+
+        private void btnPickSource_Click(object sender, EventArgs e)
+        {
+            selectedOptionCellPicker = (int)cellType.SOURCE;
+            HandleAfterPickOption();
+
+            // render
+            renderSelectPickSourceButton();
+            renderUnselectPickBlockedButton();
+            renderUnselectPickDestinationButton();
+        }
+
+        private void btnPickDest_Click(object sender, EventArgs e)
+        {
+            selectedOptionCellPicker = (int)cellType.DESTINATION;
+            HandleAfterPickOption();
+
+            // render
+            renderSelectPickDestinationButton();
+            renderUnselectPickSourceButton();
+            renderUnselectPickDestinationButton();
+        }
+
+        private void BtnPickBlocked_Click(object sender, EventArgs e)
+        {
+            selectedOptionCellPicker = (int)cellType.BLOCK;
+            HandleAfterPickOption();
+
+            // render
+            renderSelectPickBlockedButton();
+            renderUnselectPickSourceButton();
+            renderUnselectPickDestinationButton();
+        }
+
+        // Handle the cell on board click event
+        private void btnCell_Click(object sender, EventArgs e)
+        {
+            // cannot pick when this set to false
+            if (!enableToPickCellOnBoard) return;
+
+            // detect which option was be selected
+            Button btn = sender as Button;
+            bool isSourcePicker = (selectedOptionCellPicker == (int)cellType.SOURCE);
+            bool isDestinationPicker = (selectedOptionCellPicker == (int)cellType.DESTINATION);
+            bool isBlockedPicker = (selectedOptionCellPicker == (int)cellType.BLOCK);
+
+            // get index from chosen button
+            int[] index = GetButtonIndex(btn);
+            int row = index[0], col = index[1];
+
+            // if that cell is picked before, unpick it
+            if (btn.BackColor != colorCellNone)
+            {
+                // if it is a src/dest spot, notice to user and ignore the picker
+                if (isBlockedPicker && 
+                    (IsSourcePick(row, col) || IsDestinationPick(row, col)))
+                {
+                    MessageBox.Show("Source or destination can not be blocked!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+               
+                // set color to none
+                btn.BackColor = colorCellNone;
+
+                // release the storage of src and dest
+                if (isSourcePicker) resetSourceLocation();
+                if (isDestinationPicker) resetDestinationLocation();
+            }
+            else
+            {
+                if (isSourcePicker)
+                {
+                    btn.BackColor = colorCellSource;
+
+                    // if it is another source, remove the color old
+                    if (src.Key != -1)
+                    {
+                        string old_name = InitIndexForButton(src.Key, src.Value);
+                        displayArea.Controls[old_name].BackColor = colorCellNone;
+                    }
+
+                    // update new src
+                    src = new KeyValuePair<int, int>(row, col);
+
+                }
+                else if (isDestinationPicker)
+                {
+                    btn.BackColor = colorCellDestination;
+
+                    // if it is another destination, remove the color old
+                    if (dest.Key != -1)
+                    {
+                        string old_name = InitIndexForButton(dest.Key, dest.Value);
+                        displayArea.Controls[old_name].BackColor = colorCellDestination;
+                    }
+
+                    // update new dest
+                    dest = new KeyValuePair<int, int>(row, col);
+                }
+                else if (isBlockedPicker)
+                {
+                    btn.BackColor = colorCellBlock;
+                }
+            }
+        }
+
+        private void btnResetCells_Click(object sender, EventArgs e)
+        {
+            // reset all color in display area
+            foreach (Control c in displayArea.Controls)
+            {
+                if (c.GetType() == typeof(Button))
+                {
+                    c.BackColor = colorCellNone;
+                }
+            }
+
+            // reset properties of A star
+            resetSourceLocation();
+            resetDestinationLocation();
+            aStar.Result.Clear();
+
+        }
+
+        private void btnPick_Click(object sender, EventArgs e)
+        {
+            if (btnPick.Text == "Start Pick")
+            {
+                enableToPickCellOnBoard = true;
+                btnPick.Text = "Stop Pick";
+            }
+            else // btnPick.Text == "Stop Pick", now is the time user chosing the cell on board and want to stop.
+            {
+                enableToPickCellOnBoard = false;
+                btnPick.Enabled = false;
+                btnPick.Text = "Start Pick";
+
+                // render
+                renderUnselectPickSourceButton();
+                renderUnselectPickBlockedButton();
+                renderUnselectPickDestinationButton();
+            }
+        }
+
+        private void btnCalc_Click(object sender, EventArgs e)
+        {
+            aStar.aStarSearch(getGrid(), src, dest);
+            ShowInSolutionTextBox(aStar.Result);
+            ReDrawDisplayBoard();
+        }
+
+        // get grid from board for A Star Search, using defined color 
         private int[,] getGrid()
         {
             int[,] grid = new int[aStar.Rows, aStar.Cols];
@@ -332,9 +429,8 @@ namespace AStarAlgorithm
             {
                 if (c.GetType() == typeof(Button))
                 {
-                    string[] index = c.Name.Split(',');
-                    int row = Int32.Parse(index[0]), col = Int32.Parse(index[1]);
-                    grid[row, col] = (c.BackColor == SystemColors.AppWorkspace ? 0 : 1); // 0: blocked, 1: can move
+                    int[] index = GetButtonIndex((Button)c);
+                    grid[index[0], index[1]] = (c.BackColor == colorCellBlock ? 0 : 1); // 0: blocked, 1: can move
                 }
             }
 
@@ -350,15 +446,14 @@ namespace AStarAlgorithm
         {
             if (cbShowPath.Checked)
             {
-                pen.Color = Color.Blue;
+                pen.Color = colorPathBlue;
             }
             else
             {
-                pen.Color = Color.FromArgb(0, 0, 0, 0);
+                pen.Color = colorPathNone;
             }
 
-            // redraw
-            displayArea.Refresh();
+            ReDrawDisplayBoard();
         }
 
         private void PathDraw_Paint(object sender, PaintEventArgs e)
@@ -392,5 +487,8 @@ namespace AStarAlgorithm
                 }
             }
         }
+
+
+        #endregion
     }
 }
