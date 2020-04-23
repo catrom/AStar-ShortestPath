@@ -49,10 +49,16 @@
             this.label8 = new System.Windows.Forms.Label();
             this.cbShowPath = new System.Windows.Forms.CheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.cbbHeuristic = new System.Windows.Forms.ComboBox();
+            this.cbTracePathByStep = new System.Windows.Forms.CheckBox();
+            this.label10 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.tbSolution = new System.Windows.Forms.RichTextBox();
             this.btnCalc = new System.Windows.Forms.Button();
             this.displayArea = new System.Windows.Forms.GroupBox();
+            this.label11 = new System.Windows.Forms.Label();
+            this.btnGoNext = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.nudRow)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudCol)).BeginInit();
             this.groupBox1.SuspendLayout();
@@ -83,7 +89,7 @@
             // 
             this.nudRow.Location = new System.Drawing.Point(130, 23);
             this.nudRow.Maximum = new decimal(new int[] {
-            14,
+            11,
             0,
             0,
             0});
@@ -96,7 +102,7 @@
             // 
             this.nudCol.Location = new System.Drawing.Point(130, 58);
             this.nudCol.Maximum = new decimal(new int[] {
-            14,
+            11,
             0,
             0,
             0});
@@ -282,41 +288,84 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.cbbHeuristic);
             this.groupBox3.Controls.Add(this.cbDiagonal);
+            this.groupBox3.Controls.Add(this.cbTracePathByStep);
             this.groupBox3.Controls.Add(this.cbShowPath);
+            this.groupBox3.Controls.Add(this.label10);
+            this.groupBox3.Controls.Add(this.label9);
             this.groupBox3.Controls.Add(this.label7);
             this.groupBox3.Controls.Add(this.label8);
-            this.groupBox3.Location = new System.Drawing.Point(12, 346);
+            this.groupBox3.Location = new System.Drawing.Point(13, 359);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(205, 96);
+            this.groupBox3.Size = new System.Drawing.Size(205, 159);
             this.groupBox3.TabIndex = 7;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Options";
             // 
+            // cbbHeuristic
+            // 
+            this.cbbHeuristic.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbHeuristic.FormattingEnabled = true;
+            this.cbbHeuristic.Location = new System.Drawing.Point(78, 122);
+            this.cbbHeuristic.Name = "cbbHeuristic";
+            this.cbbHeuristic.Size = new System.Drawing.Size(96, 21);
+            this.cbbHeuristic.TabIndex = 10;
+            this.cbbHeuristic.SelectedIndexChanged += new System.EventHandler(this.cbbHeuristic_SelectedIndexChanged);
+            // 
+            // cbTracePathByStep
+            // 
+            this.cbTracePathByStep.AutoSize = true;
+            this.cbTracePathByStep.Location = new System.Drawing.Point(160, 92);
+            this.cbTracePathByStep.Name = "cbTracePathByStep";
+            this.cbTracePathByStep.Size = new System.Drawing.Size(15, 14);
+            this.cbTracePathByStep.TabIndex = 9;
+            this.cbTracePathByStep.UseVisualStyleBackColor = true;
+            this.cbTracePathByStep.CheckedChanged += new System.EventHandler(this.cbTracePathByStep_CheckedChanged);
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(16, 125);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(56, 13);
+            this.label10.TabIndex = 5;
+            this.label10.Text = "Heuristics:";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(16, 92);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(73, 13);
+            this.label9.TabIndex = 5;
+            this.label9.Text = "Step by Steps";
+            // 
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.tbSolution);
-            this.groupBox4.Location = new System.Drawing.Point(247, 72);
+            this.groupBox4.Location = new System.Drawing.Point(265, 12);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(102, 370);
+            this.groupBox4.Size = new System.Drawing.Size(156, 312);
             this.groupBox4.TabIndex = 7;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Solution";
             // 
             // tbSolution
             // 
+            this.tbSolution.Enabled = false;
             this.tbSolution.Location = new System.Drawing.Point(6, 23);
             this.tbSolution.Name = "tbSolution";
-            this.tbSolution.Size = new System.Drawing.Size(90, 340);
+            this.tbSolution.Size = new System.Drawing.Size(144, 283);
             this.tbSolution.TabIndex = 0;
             this.tbSolution.Text = "";
             // 
             // btnCalc
             // 
-            this.btnCalc.BackColor = System.Drawing.Color.MediumPurple;
-            this.btnCalc.Location = new System.Drawing.Point(247, 17);
+            this.btnCalc.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.btnCalc.Location = new System.Drawing.Point(265, 363);
             this.btnCalc.Name = "btnCalc";
-            this.btnCalc.Size = new System.Drawing.Size(102, 33);
+            this.btnCalc.Size = new System.Drawing.Size(156, 45);
             this.btnCalc.TabIndex = 9;
             this.btnCalc.Text = "CALCULATE";
             this.btnCalc.UseVisualStyleBackColor = false;
@@ -324,17 +373,41 @@
             // 
             // displayArea
             // 
-            this.displayArea.Location = new System.Drawing.Point(379, 12);
+            this.displayArea.Location = new System.Drawing.Point(463, 12);
             this.displayArea.Name = "displayArea";
-            this.displayArea.Size = new System.Drawing.Size(610, 609);
+            this.displayArea.Size = new System.Drawing.Size(507, 506);
             this.displayArea.TabIndex = 9;
             this.displayArea.TabStop = false;
             this.displayArea.Text = "Display";
             this.displayArea.Paint += new System.Windows.Forms.PaintEventHandler(this.PathDraw_Paint);
             // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label11.ForeColor = System.Drawing.SystemColors.ButtonShadow;
+            this.label11.Location = new System.Drawing.Point(264, 418);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(99, 13);
+            this.label11.TabIndex = 10;
+            this.label11.Text = "Created by CatRom\r\n";
+            // 
+            // btnGoNext
+            // 
+            this.btnGoNext.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.btnGoNext.Location = new System.Drawing.Point(265, 440);
+            this.btnGoNext.Name = "btnGoNext";
+            this.btnGoNext.Size = new System.Drawing.Size(79, 35);
+            this.btnGoNext.TabIndex = 7;
+            this.btnGoNext.Text = "Next Step >>";
+            this.btnGoNext.UseVisualStyleBackColor = false;
+            this.btnGoNext.Click += new System.EventHandler(this.btnGoNext_Click);
+            // 
             // Form1
             // 
-            this.ClientSize = new System.Drawing.Size(992, 625);
+            this.ClientSize = new System.Drawing.Size(982, 528);
+            this.Controls.Add(this.btnGoNext);
+            this.Controls.Add(this.label11);
             this.Controls.Add(this.displayArea);
             this.Controls.Add(this.btnCalc);
             this.Controls.Add(this.groupBox4);
@@ -342,7 +415,7 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Name = "Form1";
-            this.Text = "A* Algorithm - Shortest Path";
+            this.Text = "A* Algorithm - Finding Path";
             ((System.ComponentModel.ISupportInitialize)(this.nudRow)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudCol)).EndInit();
             this.groupBox1.ResumeLayout(false);
@@ -353,6 +426,7 @@
             this.groupBox3.PerformLayout();
             this.groupBox4.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -384,6 +458,12 @@
         private System.Windows.Forms.Button btnApplySize;
         private System.Windows.Forms.Button btnResetCells;
         private System.Windows.Forms.Button btnPick;
+        private System.Windows.Forms.CheckBox cbTracePathByStep;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.ComboBox cbbHeuristic;
+        private System.Windows.Forms.Button btnGoNext;
     }
 }
 

@@ -20,6 +20,8 @@ namespace AStarAlgorithm
         public Color colorCellSource = Color.Green;
         public Color colorCellDestination = Color.Red;
         public Color colorCellBlock = Color.Gray;
+        public Color colorCellInOpenList = Color.LimeGreen;
+        public Color colorCellInCloseList = Color.Orange;
 
         // path color
         public Color colorPathBlue = Color.Blue;
@@ -40,6 +42,9 @@ namespace AStarAlgorithm
         // Destination is the left-most top-most corner 
         KeyValuePair<int, int> dest;
 
+        // bool 
+        bool letMagicHappen;
+
         public Form1()
         {
             InitializeComponent();
@@ -52,6 +57,7 @@ namespace AStarAlgorithm
         {
             aStar = new AStar();
             pen = new Pen(Color.Blue, 2);
+            letMagicHappen = false;
 
             // if user have not pick any cell option yet, this will be set to false
             btnPick.Enabled = false;
@@ -59,7 +65,31 @@ namespace AStarAlgorithm
             selectedOptionCellPicker = (int)cellType.NONE;
             enableToPickCellOnBoard = false;
 
+            // init combobox Heuristic Model
+            cbbHeuristic.DataSource = new object[] { "Manhattan", "Diagonal", "Euclidean" };
+            cbbHeuristic.DisplayMember = "Manhattan";
+            aStar.HeuristicModel = (int)AStar.Heuristics.Manhattan; // set to default
+
             ResetLocation();
+            DoItAtOnce(); // default
+        }
+
+        private void GoStepByStep()
+        {
+            aStar.GoStepByStep = true;
+            btnCalc.Enabled = false;
+            btnGoNext.Enabled = true;
+            ResetAStar();
+            ResetSolutionTextbox();
+        }
+
+        private void DoItAtOnce()
+        {
+            aStar.GoStepByStep = false;
+            btnCalc.Enabled = true;
+            btnGoNext.Enabled = false;
+            ResetAStar();
+            ResetSolutionTextbox();
         }
 
         private void resetSourceLocation()
@@ -83,10 +113,47 @@ namespace AStarAlgorithm
             displayArea.Controls.Clear();
         }
 
+        private void ResetCellsColor()
+        {
+            foreach (Control c in displayArea.Controls)
+            {
+                if (c.GetType() == typeof(Button))
+                {
+                    Button btn = (Button)c;
+                    int[] index = GetButtonIndex(btn);
+
+                    if (IsSourcePick(index[0], index[1]) || IsDestinationPick(index[0], index[1])) 
+                        continue;
+                    if (btn.BackColor != colorCellBlock) btn.BackColor = colorCellNone;
+                }
+            }
+
+            // redraw
+            ReDrawDisplayBoard();
+        }
+
         private void ResetAStar()
         {
+            aStar.FoundDest = false;
             aStar.Result.Clear();
-            ResetLocation();
+            aStar.IsInitAstar = false;
+            aStar.ResetOpenList();
+            aStar.ResetCloseList();
+            aStar.ResetCellTracking();
+        }
+
+        private void ResetAStarWithoutResetCellTracking()
+        {
+            aStar.FoundDest = false;
+            aStar.Result.Clear();
+            aStar.IsInitAstar = false;
+            aStar.ResetOpenList();
+            aStar.ResetCloseList();
+        }
+
+        private void ResetSolutionTextbox()
+        {
+            tbSolution.Text = "";
         }
 
         private void ReDrawDisplayBoard()
@@ -247,6 +314,23 @@ namespace AStarAlgorithm
             }
         }
 
+        // get grid from board for A Star Search, using defined color 
+        private int[,] getGrid()
+        {
+            int[,] grid = new int[aStar.Rows, aStar.Cols];
+
+            foreach (Control c in displayArea.Controls)
+            {
+                if (c.GetType() == typeof(Button))
+                {
+                    int[] index = GetButtonIndex((Button)c);
+                    grid[index[0], index[1]] = (c.BackColor == colorCellBlock ? 0 : 1); // 0: blocked, 1: can move
+                }
+            }
+
+            return grid;
+        }
+
         #endregion
 
         #region Event Handlers
@@ -258,12 +342,14 @@ namespace AStarAlgorithm
 
             ResetDisplayArea();
             ResetAStar();
+            ResetSolutionTextbox();
         }
 
         private void btnApplySize_Click(object sender, EventArgs e)
         {
             ResetDisplayArea();
-            // aStar.Result.Clear();
+            ResetAStar();
+            ResetLocation();
 
             ApplySizeToAStarGrid();
             InitIndexOnDisplayArea();
@@ -289,7 +375,7 @@ namespace AStarAlgorithm
             // render
             renderSelectPickDestinationButton();
             renderUnselectPickSourceButton();
-            renderUnselectPickDestinationButton();
+            renderUnselectPickBlockedButton();
         }
 
         private void BtnPickBlocked_Click(object sender, EventArgs e)
@@ -362,7 +448,7 @@ namespace AStarAlgorithm
                     if (dest.Key != -1)
                     {
                         string old_name = InitIndexForButton(dest.Key, dest.Value);
-                        displayArea.Controls[old_name].BackColor = colorCellDestination;
+                        displayArea.Controls[old_name].BackColor = colorCellNone;
                     }
 
                     // update new dest
@@ -389,7 +475,8 @@ namespace AStarAlgorithm
             // reset properties of A star
             resetSourceLocation();
             resetDestinationLocation();
-            aStar.Result.Clear();
+            ResetAStar();
+            ResetSolutionTextbox();
 
         }
 
@@ -415,31 +502,24 @@ namespace AStarAlgorithm
 
         private void btnCalc_Click(object sender, EventArgs e)
         {
-            aStar.aStarSearch(getGrid(), src, dest);
+            aStar.IsInitAstar = false;
+
+            int[,] grid = getGrid();
+
+            if (aStar.HandleBeforeSearching(grid, src, dest))
+            {
+                aStar.aStarSearch(grid, src, dest);
+            }
+            
             ShowInSolutionTextBox(aStar.Result);
             ReDrawDisplayBoard();
-        }
-
-        // get grid from board for A Star Search, using defined color 
-        private int[,] getGrid()
-        {
-            int[,] grid = new int[aStar.Rows, aStar.Cols];
-
-            foreach (Control c in displayArea.Controls)
-            {
-                if (c.GetType() == typeof(Button))
-                {
-                    int[] index = GetButtonIndex((Button)c);
-                    grid[index[0], index[1]] = (c.BackColor == colorCellBlock ? 0 : 1); // 0: blocked, 1: can move
-                }
-            }
-
-            return grid;
         }
 
         private void cbDiagonal_CheckedChanged(object sender, EventArgs e)
         {
             aStar.AllowDiagonalMove = cbDiagonal.Checked;
+            ResetAStar();
+            ResetSolutionTextbox();
         }
 
         private void cbShowPath_CheckedChanged(object sender, EventArgs e)
@@ -458,14 +538,16 @@ namespace AStarAlgorithm
 
         private void PathDraw_Paint(object sender, PaintEventArgs e)
         {
-            KeyValuePair<int, int>[] result = aStar.Result.ToArray();
-            int len = result.Count();
-            if (len > 0)
+
+            if (aStar.GoStepByStep) // draw the list tracked cells
             {
-                for (int i = 0; i < len - 1; i++)
+                List<KeyValuePair<KeyValuePair<int, int>, KeyValuePair<int, int>>> listTrackedCells = aStar.CellTracking;
+                int len = listTrackedCells.Count();
+
+                for (int i = 0; i < len; i++)
                 {
-                    string btn1 = result[i].Key.ToString() + "," + result[i].Value.ToString();
-                    string btn2 = result[i + 1].Key.ToString() + "," + result[i + 1].Value.ToString();
+                    string btn1 = listTrackedCells[i].Key.Key.ToString() + "," + listTrackedCells[i].Key.Value.ToString();
+                    string btn2 = listTrackedCells[i].Value.Key.ToString() + "," + listTrackedCells[i].Value.Value.ToString();
 
                     Point pt1 = new Point(displayArea.Controls[btn1].Left + (displayArea.Controls[btn1].Width / 2),
                             displayArea.Controls[btn1].Top + (displayArea.Controls[btn1].Height / 2));
@@ -485,10 +567,148 @@ namespace AStarAlgorithm
 
                     e.Graphics.DrawLine(pen, pt1, pt2);
                 }
+
+                // coloring all cells in open list and close list for more visualize :)
+                HashSet<KeyValuePair<double, KeyValuePair<int, int>>> openList
+                    = new HashSet<KeyValuePair<double, KeyValuePair<int, int>>>(aStar.OpenList);
+                bool[,] closeList = aStar.ClosedList;
+
+                // color open list
+                while (openList.Count() > 0)
+                {
+                    KeyValuePair<double, KeyValuePair<int, int>> cell = openList.First();
+                    openList.Remove(openList.First());
+
+                    // not change the color of src/dest cell
+                    if (IsSourcePick(cell.Value.Key, cell.Value.Value) ||
+                        IsDestinationPick(cell.Value.Key, cell.Value.Value))
+                        continue;
+
+                    string cellIndex = InitIndexForButton(cell.Value.Key, cell.Value.Value);
+                    displayArea.Controls[cellIndex].BackColor = colorCellInOpenList;
+                }
+
+                // color close list 
+                int numsRowCloseList = closeList.GetLength(0);
+
+                if (numsRowCloseList > 0)
+                {
+                    int numsColCloseList = aStar.Cols;
+
+                    for (int i = 0; i < numsRowCloseList; i++)
+                    {
+                        for (int j = 0; j < numsColCloseList; j++)
+                        {
+                            if (closeList[i, j] && !(IsSourcePick(i, j) || IsDestinationPick(i, j)))
+                            {
+                                string cellIndex = InitIndexForButton(i, j);
+                                displayArea.Controls[cellIndex].BackColor = colorCellInCloseList;
+                            }
+                        }
+                    }
+                }
+            }
+            else // drawa the result at once
+            {
+                KeyValuePair<int, int>[] result = aStar.Result.ToArray();
+                int len = result.Count();
+                if (len > 0)
+                {
+                    for (int i = 0; i < len - 1; i++)
+                    {
+                        string btn1 = result[i].Key.ToString() + "," + result[i].Value.ToString();
+                        string btn2 = result[i + 1].Key.ToString() + "," + result[i + 1].Value.ToString();
+
+                        Point pt1 = new Point(displayArea.Controls[btn1].Left + (displayArea.Controls[btn1].Width / 2),
+                                displayArea.Controls[btn1].Top + (displayArea.Controls[btn1].Height / 2));
+                        Point pt2 = new Point(displayArea.Controls[btn2].Left + (displayArea.Controls[btn2].Width / 2),
+                                displayArea.Controls[btn2].Top + (displayArea.Controls[btn2].Height / 2));
+
+                        if (sender is Button)
+                        {
+                            // offset line so it's drawn over the button where
+                            // the line on the panel is drawn
+                            Button btn = (Button)sender;
+                            pt1.X -= btn.Left;
+                            pt1.Y -= btn.Top;
+                            pt2.X -= btn.Left;
+                            pt2.Y -= btn.Top;
+                        }
+
+                        e.Graphics.DrawLine(pen, pt1, pt2);
+                    }
+                }
             }
         }
 
+        private void cbbHeuristic_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cbbHeuristic.Text == "Manhattan")
+            {
+                aStar.HeuristicModel = (int)AStar.Heuristics.Manhattan;
+            }
+            else if (cbbHeuristic.Text == "Diagonal")
+            {
+                aStar.HeuristicModel = (int)AStar.Heuristics.Diagonal;
+            }
+            else if (cbbHeuristic.Text == "Euclidean")
+            {
+                aStar.HeuristicModel = (int)AStar.Heuristics.Euclidean;
+            }
+
+            // reset
+            ResetAStar();
+            ResetSolutionTextbox();
+        }
+
+        private void cbTracePathByStep_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cbTracePathByStep.Checked)
+            {
+                // reset pen
+                // pen.Color = colorPathBlue;
+                GoStepByStep();
+                ResetCellsColor();
+            }
+            else
+            {
+                // reset pen
+                // pen.Color = colorPathNone;
+                DoItAtOnce();
+                ResetCellsColor();
+            }
+        }
+
+        private void btnGoNext_Click(object sender, EventArgs e)
+        {
+            if (aStar.FoundDest)
+            {
+                ShowInSolutionTextBox(aStar.Result);
+                ResetAStarWithoutResetCellTracking(); // keep cell tracking list to render
+                letMagicHappen = true;
+                return;
+            }
+
+            if (letMagicHappen)
+            {
+                letMagicHappen = false;
+                aStar.ResetCellTracking(); 
+            }
+
+            ResetCellsColor();
+
+            int[,] grid = getGrid();
+
+            if (aStar.HandleBeforeSearching(grid, src, dest))
+            {
+                aStar.aStarSearch(grid, src, dest);
+            }
+
+            ReDrawDisplayBoard();
+        }
 
         #endregion
+
+
     }
 }
